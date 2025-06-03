@@ -1,38 +1,172 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom styles for the product calculator */
 .App {
-    text-align: center;
+  text-align: left;
 }
 
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Smooth transitions for form elements */
+input, select, button {
+  transition: all 0.2s ease-in-out;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Custom scrollbar for history section */
+.history-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.history-scroll::-webkit-scrollbar {
+  width: 6px;
 }
 
-.App-link {
-    color: #61dafb;
+.history-scroll::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: 3px;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.history-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e0;
+  border-radius: 3px;
+}
+
+.history-scroll::-webkit-scrollbar-thumb:hover {
+  background: #a0aec0;
+}
+
+/* Loading animation */
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading {
+  animation: spin 1s linear infinite;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none;
+  }
+  
+  .print-only {
+    display: block;
+  }
+}
+
+/* Focus styles for better accessibility */
+button:focus,
+input:focus,
+select:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Custom button hover effects */
+.btn-primary {
+  @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-gray-500 text-white px-4 py-2 rounded-md hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors;
+}
+
+/* Card styles */
+.card {
+  @apply bg-white rounded-lg shadow-lg p-6;
+}
+
+.card-header {
+  @apply text-2xl font-semibold text-gray-800 mb-6;
+}
+
+/* Result highlighting */
+.profit-positive {
+  @apply text-green-600 font-semibold;
+}
+
+.profit-negative {
+  @apply text-red-600 font-semibold;
+}
+
+.profit-neutral {
+  @apply text-gray-600 font-semibold;
+}
+
+/* Form validation styles */
+.input-error {
+  @apply border-red-300 focus:ring-red-500 focus:border-red-500;
+}
+
+.input-success {
+  @apply border-green-300 focus:ring-green-500 focus:border-green-500;
+}
+
+/* Calculation result animations */
+.result-enter {
+  opacity: 0;
+  transform: translateY(20px);
+}
+
+.result-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+/* History card hover effects */
+.history-card {
+  @apply transition-all duration-200 hover:shadow-md hover:scale-105;
+}
+
+/* Custom gradient backgrounds */
+.gradient-blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.gradient-green {
+  background: linear-gradient(135deg, #4ade80 0%, #22c55e 100%);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+}
+
+/* Loading spinner */
+.spinner {
+  @apply inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full;
+  animation: spin 1s linear infinite;
+}
+
+/* Tooltip styles */
+.tooltip {
+  @apply relative;
+}
+
+.tooltip:hover::after {
+  @apply absolute bottom-full left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 mb-2;
+  content: attr(data-tooltip);
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* Custom checkbox styles */
+.custom-checkbox {
+  @apply appearance-none w-4 h-4 border border-gray-300 rounded checked:bg-blue-600 checked:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+.custom-checkbox:checked::after {
+  content: '✓';
+  @apply text-white text-xs font-bold flex items-center justify-center h-full;
 }
