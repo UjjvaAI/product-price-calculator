@@ -228,5 +228,57 @@ class ProductPricingCalculatorAPITest(unittest.TestCase):
         
         print("✅ Bulk calculation test passed")
 
+    def test_09_review_request_calculation(self):
+        """Test calculation with the specific test case from the review request"""
+        print("\n🔍 Testing calculation with Review Request Test Case...")
+        test_data = {
+            "product_name": "Final Test Product",
+            "quantity": 8,
+            "unit_price_before_tax": 125,
+            "gst_percentage": 18,
+            "sales_price_mrp_per_unit": 180
+        }
+        
+        response = self.session.post(f"{self.base_url}/calculate", json=test_data)
+        self.assertEqual(response.status_code, 200)
+        result = response.json()
+        
+        # Verify the calculation results
+        self.assertEqual(result["product_name"], "Final Test Product")
+        self.assertEqual(result["quantity"], 8)
+        self.assertEqual(result["unit_price_before_tax"], 125)
+        self.assertEqual(result["gst_percentage"], 18)
+        self.assertEqual(result["sales_price_mrp_per_unit"], 180)
+        
+        # Check calculated values against expected results from review request
+        self.assertEqual(result["subtotal_before_tax"], 1000)
+        self.assertEqual(result["unit_price_after_tax"], 147.5)
+        self.assertEqual(result["subtotal_after_tax"], 1180)
+        self.assertAlmostEqual(result["margin_percentage"], 18.06, delta=0.01)
+        self.assertAlmostEqual(result["markup_percentage"], 22.03, delta=0.01)
+        
+        # Test saving to history
+        # First, get the calculation ID
+        calc_id = result["calculation_id"]
+        
+        # Then, check if it appears in the history
+        response = self.session.get(f"{self.base_url}/calculations")
+        self.assertEqual(response.status_code, 200)
+        history = response.json()
+        
+        # Verify that the history is not empty
+        self.assertTrue(len(history) > 0)
+        
+        # Check if our calculation is in the history
+        found = False
+        for entry in history:
+            if entry["calculation_result"]["product_name"] == "Final Test Product":
+                found = True
+                break
+        
+        self.assertTrue(found, "Calculation was not found in history")
+        print("✅ Review Request calculation test passed")
+        print("✅ Calculation was successfully saved to history")
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
