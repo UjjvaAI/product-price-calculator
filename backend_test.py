@@ -171,7 +171,7 @@ class ProductPricingCalculatorAPITest(unittest.TestCase):
         }
         
         response = self.session.post(f"{self.base_url}/calculate", json=test_data)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)  # FastAPI uses 422 for validation errors
         
         # Test with invalid GST percentage (over 100%)
         test_data = {
@@ -183,7 +183,7 @@ class ProductPricingCalculatorAPITest(unittest.TestCase):
         }
         
         response = self.session.post(f"{self.base_url}/calculate", json=test_data)
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 422)  # FastAPI uses 422 for validation errors
         
         print("✅ Validation errors test passed")
 
