@@ -103,10 +103,12 @@ const ProductCalculator = () => {
 
   const saveCalculationToHistory = async (result) => {
     try {
-      await axios.post(`${API}/calculations`, result);
+      console.log('Saving calculation to history:', result);
+      const response = await axios.post(`${API}/calculations`, result);
+      console.log('Saved to history successfully:', response.data);
       fetchCalculationHistory(); // Refresh history
     } catch (error) {
-      console.error('Error saving to history:', error);
+      console.error('Error saving to history:', error.response?.data || error.message);
     }
   };
 
