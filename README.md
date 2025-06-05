@@ -264,200 +264,202 @@
 
     // Main calculation function
     function calculatePricing(e) {
-      if (e) e.preventDefault(); // Allow calling without event
+        console.log("calculatePricing function HAS STARTED"); // <-- ADDED THIS LINE
+        if (e) e.preventDefault(); // Allow calling without event
 
-      // Clear previous errors and results
-      errorDisplayDiv.innerHTML = '';
-      errorDisplayDiv.classList.add('hidden');
-      // resultsOutputDiv.innerHTML = ''; // Cleared later by population
-      // keyMetricsCard.innerHTML = ''; // Cleared later by population
-      // resultsContainer.classList.add('hidden'); // Shown at the end
+        // Clear previous errors and results
+        errorDisplayDiv.innerHTML = '';
+        errorDisplayDiv.classList.add('hidden');
+        // resultsOutputDiv.innerHTML = ''; // Cleared later by population
+        // keyMetricsCard.innerHTML = ''; // Cleared later by population
+        // resultsContainer.classList.add('hidden'); // Shown at the end
 
-      // Get input values
-      const productName = productNameInput.value.trim() || "Unnamed Product";
-      const qty = parseFloat(quantityInput.value);
-      const unitPriceBeforeTax = parseFloat(unitPriceBeforeTaxInput.value);
-      const selectedGstPercentage = parseFloat(gstPercentageInput.value);
-      const salesPriceMrpPerUnit = parseFloat(salesPriceMrpInput.value);
-      const discountPercentage = parseFloat(discountPercentageInput.value);
-      
-      let shippingCost = 0;
-      let operatingCostPercentage = 0;
-      if (showAdvancedCheckbox.checked) {
-          shippingCost = parseFloat(shippingCostInput.value) || 0;
-          operatingCostPercentage = parseFloat(operatingCostInput.value) || 0;
-      }
-      
-      // Input validation
-      const errors = [];
-      if (!productNameInput.value.trim()) errors.push("Product name is required");
-      if (isNaN(qty) || qty <= 0) errors.push("Quantity must be a positive number");
-      if (isNaN(unitPriceBeforeTax) || unitPriceBeforeTax < 0) errors.push("Unit cost must be a non-negative number");
-      if (isNaN(selectedGstPercentage) || selectedGstPercentage < 0) errors.push("Tax rate must be a non-negative number");
-      if (isNaN(salesPriceMrpPerUnit) || salesPriceMrpPerUnit <= 0) errors.push("Selling price must be a positive number");
-      if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) errors.push("Discount must be between 0-100%");
-      if (showAdvancedCheckbox.checked) {
-        if (isNaN(shippingCost) || shippingCost < 0) errors.push("Shipping cost must be a non-negative number.");
-        if (isNaN(operatingCostPercentage) || operatingCostPercentage < 0 || operatingCostPercentage > 100) errors.push("Operating cost must be between 0-100%.");
-      }
+        // Get input values
+        const productName = productNameInput.value.trim() || "Unnamed Product";
+        const qty = parseFloat(quantityInput.value);
+        const unitPriceBeforeTax = parseFloat(unitPriceBeforeTaxInput.value);
+        const selectedGstPercentage = parseFloat(gstPercentageInput.value);
+        const salesPriceMrpPerUnit = parseFloat(salesPriceMrpInput.value);
+        const discountPercentage = parseFloat(discountPercentageInput.value);
+        
+        let shippingCost = 0;
+        let operatingCostPercentage = 0;
+        if (showAdvancedCheckbox.checked) {
+            shippingCost = parseFloat(shippingCostInput.value) || 0;
+            operatingCostPercentage = parseFloat(operatingCostInput.value) || 0;
+        }
+        
+        // Input validation
+        const errors = [];
+        if (!productNameInput.value.trim()) errors.push("Product name is required");
+        if (isNaN(qty) || qty <= 0) errors.push("Quantity must be a positive number");
+        if (isNaN(unitPriceBeforeTax) || unitPriceBeforeTax < 0) errors.push("Unit cost must be a non-negative number");
+        if (isNaN(selectedGstPercentage) || selectedGstPercentage < 0) errors.push("Tax rate must be a non-negative number");
+        if (isNaN(salesPriceMrpPerUnit) || salesPriceMrpPerUnit <= 0) errors.push("Selling price must be a positive number");
+        if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) errors.push("Discount must be between 0-100%");
+        if (showAdvancedCheckbox.checked) {
+          if (isNaN(shippingCost) || shippingCost < 0) errors.push("Shipping cost must be a non-negative number.");
+          if (isNaN(operatingCostPercentage) || operatingCostPercentage < 0 || operatingCostPercentage > 100) errors.push("Operating cost must be between 0-100%.");
+        }
 
 
-      if (errors.length > 0) {
-        errorDisplayDiv.classList.remove('hidden');
-        errorDisplayDiv.innerHTML = `
-          <div class="bg-red-50 border-l-4 border-red-400 p-4">
-            <div class="flex">
-              <div class="flex-shrink-0">
-                <i class="fas fa-exclamation-circle text-red-400"></i>
-              </div>
-              <div class="ml-3">
-                <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
-                <div class="mt-2 text-sm text-red-700">
-                  <ul class="list-disc pl-5 space-y-1">
-                    ${errors.map(err => `<li>${err}</li>`).join('')}
-                  </ul>
+        if (errors.length > 0) {
+          errorDisplayDiv.classList.remove('hidden');
+          errorDisplayDiv.innerHTML = `
+            <div class="bg-red-50 border-l-4 border-red-400 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-exclamation-circle text-red-400"></i>
+                </div>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+                  <div class="mt-2 text-sm text-red-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                      ${errors.map(err => `<li>${err}</li>`).join('')}
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
+          `;
+          resultsContainer.classList.add('hidden');
+          return;
+        }
+        
+        // Calculations
+        const taxRateDecimal = selectedGstPercentage / 100;
+        const discountRate = discountPercentage / 100;
+        
+        const unitPriceAfterTax = unitPriceBeforeTax * (1 + taxRateDecimal);
+        const subtotalAfterTax = qty * unitPriceAfterTax; // Total cost of goods for the quantity
+
+        const salePriceAfterDiscount = salesPriceMrpPerUnit * (1 - discountRate);
+        const totalRevenue = qty * salePriceAfterDiscount;
+        
+        const costOfGoodsSold = unitPriceAfterTax * qty; // Same as subtotalAfterTax
+        const grossProfit = totalRevenue - costOfGoodsSold;
+        
+        const grossProfitPercentage = totalRevenue !== 0 ? (grossProfit / totalRevenue) * 100 : 0;
+        const markupPercentage = unitPriceAfterTax !== 0 ? ((salePriceAfterDiscount - unitPriceAfterTax) / unitPriceAfterTax) * 100 : Infinity;
+        
+        const operatingCostAmount = totalRevenue * (operatingCostPercentage / 100);
+        const totalFixedExpenses = shippingCost; // Assuming shipping is the main fixed expense for this batch calculation
+        const totalVariableExpensesNotCOGS = operatingCostAmount;
+        const totalExpenses = totalVariableExpensesNotCOGS + totalFixedExpenses;
+
+        const netProfit = grossProfit - totalExpenses;
+        const netProfitPercentage = totalRevenue !== 0 ? (netProfit / totalRevenue) * 100 : 0;
+        
+        // Break-even point
+        let breakEvenQty;
+        // Variable cost per unit = unit cost after tax + (selling price per unit * operating cost percentage)
+        const effectiveUnitVariableCost = unitPriceAfterTax + (salePriceAfterDiscount * (operatingCostPercentage / 100));
+        // Contribution margin per unit = selling price - all variable costs per unit
+        const unitContributionToFixedCosts = salePriceAfterDiscount - effectiveUnitVariableCost;
+
+        if (unitContributionToFixedCosts <= 0) {
+            breakEvenQty = (totalFixedExpenses > 0) ? Infinity : 0; 
+        } else {
+            breakEvenQty = totalFixedExpenses / unitContributionToFixedCosts; // No Math.ceil here, formatOutput will handle
+        }
+        
+        // Show results
+        productNameLabel.textContent = productName;
+        
+        const renderResultItem = (label, value, type = 'currency', icon = 'info-circle', decimals = 2) => {
+          return `
+            <div class="flex justify-between py-2 border-b border-gray-200 last:border-0">
+              <div class="flex items-center text-gray-700">
+                <i class="fas fa-${icon} text-blue-400 mr-2"></i>
+                <span class="text-sm font-medium">${label}</span>
+              </div>
+              <div class="text-gray-900 font-medium">
+                ${formatOutput(value, type, decimals)}
+              </div>
+            </div>
+          `;
+        };
+        
+        resultsOutputDiv.innerHTML = `
+          <div class="space-y-4">
+            <div class="result-highlight rounded-lg p-4">
+              <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-dollar-sign text-blue-500 mr-2"></i> Cost Breakdown
+              </h4>
+              ${renderResultItem('Unit Cost (before tax)', unitPriceBeforeTax, 'currency', 'file-invoice-dollar')}
+              ${renderResultItem('Tax Rate', selectedGstPercentage, 'percentage', 'percentage', 2)}
+              ${renderResultItem('Unit Cost (after tax)', unitPriceAfterTax, 'currency', 'money-check-alt')}
+              ${renderResultItem(`Total Cost for ${qty} Units (after tax)`, subtotalAfterTax, 'currency', 'cart-plus')}
+              ${showAdvancedCheckbox.checked ? renderResultItem('Shipping Cost (Total Fixed)', shippingCost, 'currency', 'truck') : ''}
+            </div>
+            
+            <div class="result-highlight rounded-lg p-4">
+              <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-tag text-blue-500 mr-2"></i> Pricing & Revenue
+              </h4>
+              ${renderResultItem('Original Price (MRP per unit)', salesPriceMrpPerUnit, 'currency', 'tag')}
+              ${renderResultItem('Discount', discountPercentage, 'percentage', 'tags', 2)}
+              ${renderResultItem('Sale Price (per unit, after discount)', salePriceAfterDiscount, 'currency', 'cash-register')}
+              ${renderResultItem(`Total Revenue for ${qty} Units`, totalRevenue, 'currency', 'coins')}
+            </div>
+            
+            <div class="result-highlight rounded-lg p-4">
+              <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-chart-line text-blue-500 mr-2"></i> Profit Metrics
+              </h4>
+              ${renderResultItem('Gross Profit', grossProfit, 'currency', 'arrow-up')}
+              ${renderResultItem('Gross Margin', grossProfitPercentage, 'percentage', 'chart-pie', 2)}
+              ${renderResultItem('Markup Percentage (on unit cost)', markupPercentage, 'percentage', 'chart-line', 2)}
+              ${showAdvancedCheckbox.checked ? renderResultItem('Operating Costs (Total)', operatingCostAmount, 'currency', 'cogs') : ''}
+              ${showAdvancedCheckbox.checked ? renderResultItem('Total Additional Expenses', totalExpenses, 'currency', 'receipt') : ''}
+              ${renderResultItem('Net Profit', netProfit, 'currency', 'hand-holding-usd')}
+              ${renderResultItem('Net Margin', netProfitPercentage, 'percentage', 'chart-bar', 2)}
+            </div>
           </div>
         `;
-        resultsContainer.classList.add('hidden');
-        return;
-      }
-      
-      // Calculations
-      const taxRateDecimal = selectedGstPercentage / 100;
-      const discountRate = discountPercentage / 100;
-      
-      const unitPriceAfterTax = unitPriceBeforeTax * (1 + taxRateDecimal);
-      const subtotalAfterTax = qty * unitPriceAfterTax; // Total cost of goods for the quantity
+        
+        const unitGrossProfit = salePriceAfterDiscount - unitPriceAfterTax;
 
-      const salePriceAfterDiscount = salesPriceMrpPerUnit * (1 - discountRate);
-      const totalRevenue = qty * salePriceAfterDiscount;
-      
-      const costOfGoodsSold = unitPriceAfterTax * qty; // Same as subtotalAfterTax
-      const grossProfit = totalRevenue - costOfGoodsSold;
-      
-      const grossProfitPercentage = totalRevenue !== 0 ? (grossProfit / totalRevenue) * 100 : 0;
-      const markupPercentage = unitPriceAfterTax !== 0 ? ((salePriceAfterDiscount - unitPriceAfterTax) / unitPriceAfterTax) * 100 : Infinity;
-      
-      const operatingCostAmount = totalRevenue * (operatingCostPercentage / 100);
-      const totalFixedExpenses = shippingCost; // Assuming shipping is the main fixed expense for this batch calculation
-      const totalVariableExpensesNotCOGS = operatingCostAmount;
-      const totalExpenses = totalVariableExpensesNotCOGS + totalFixedExpenses;
-
-      const netProfit = grossProfit - totalExpenses;
-      const netProfitPercentage = totalRevenue !== 0 ? (netProfit / totalRevenue) * 100 : 0;
-      
-      // Break-even point
-      let breakEvenQty;
-      // Variable cost per unit = unit cost after tax + (selling price per unit * operating cost percentage)
-      const effectiveUnitVariableCost = unitPriceAfterTax + (salePriceAfterDiscount * (operatingCostPercentage / 100));
-      // Contribution margin per unit = selling price - all variable costs per unit
-      const unitContributionToFixedCosts = salePriceAfterDiscount - effectiveUnitVariableCost;
-
-      if (unitContributionToFixedCosts <= 0) {
-          breakEvenQty = (totalFixedExpenses > 0) ? Infinity : 0; 
-      } else {
-          breakEvenQty = totalFixedExpenses / unitContributionToFixedCosts; // No Math.ceil here, formatOutput will handle
-      }
-      
-      // Show results
-      productNameLabel.textContent = productName;
-      
-      const renderResultItem = (label, value, type = 'currency', icon = 'info-circle', decimals = 2) => {
-        return `
-          <div class="flex justify-between py-2 border-b border-gray-200 last:border-0">
-            <div class="flex items-center text-gray-700">
-              <i class="fas fa-${icon} text-blue-400 mr-2"></i>
-              <span class="text-sm font-medium">${label}</span>
+        keyMetricsCard.innerHTML = `
+          <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-percentage text-blue-500 mr-2"></i>
+              <span class="font-medium text-sm text-blue-700">Net Profit Margin</span>
             </div>
-            <div class="text-gray-900 font-medium">
-              ${formatOutput(value, type, decimals)}
+            <h3 class="text-2xl font-bold text-blue-800">${formatOutput(netProfitPercentage, 'percentage', 1)}</h3>
+            <p class="text-xs text-blue-600 mt-1">${formatOutput(netProfit, 'currency')} net profit total</p>
+          </div>
+          
+          <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-chart-line text-green-500 mr-2"></i>
+              <span class="font-medium text-sm text-green-700">Markup %</span>
             </div>
+            <h3 class="text-2xl font-bold text-green-800">${formatOutput(markupPercentage, 'percentage', 1)}</h3>
+            <p class="text-xs text-green-600 mt-1">on ${formatOutput(unitPriceAfterTax, 'currency')} unit cost</p>
+          </div>
+          
+          <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-bullseye text-purple-500 mr-2"></i>
+              <span class="font-medium text-sm text-purple-700">Break-even Units</span>
+            </div>
+            <h3 class="text-2xl font-bold text-purple-800">${formatOutput(breakEvenQty, 'qty', 0)}</h3>
+            <p class="text-xs text-purple-600 mt-1">units to cover fixed costs</p>
+          </div>
+          
+          <div class="bg-orange-50 border border-orange-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-dollar-sign text-orange-500 mr-2"></i>
+              <span class="font-medium text-sm text-orange-700">Unit Gross Profit</span>
+            </div>
+            <h3 class="text-2xl font-bold text-orange-800">${formatOutput(unitGrossProfit, 'currency')}</h3>
+            <p class="text-xs text-orange-600 mt-1">before op. & shipping costs</p>
           </div>
         `;
-      };
-      
-      resultsOutputDiv.innerHTML = `
-        <div class="space-y-4">
-          <div class="result-highlight rounded-lg p-4">
-            <h4 class="font-medium text-gray-700 mb-2 flex items-center">
-              <i class="fas fa-dollar-sign text-blue-500 mr-2"></i> Cost Breakdown
-            </h4>
-            ${renderResultItem('Unit Cost (before tax)', unitPriceBeforeTax, 'currency', 'file-invoice-dollar')}
-            ${renderResultItem('Tax Rate', selectedGstPercentage, 'percentage', 'percentage', 2)}
-            ${renderResultItem('Unit Cost (after tax)', unitPriceAfterTax, 'currency', 'money-check-alt')}
-            ${renderResultItem(`Total Cost for ${qty} Units (after tax)`, subtotalAfterTax, 'currency', 'cart-plus')}
-            ${showAdvancedCheckbox.checked ? renderResultItem('Shipping Cost (Total Fixed)', shippingCost, 'currency', 'truck') : ''}
-          </div>
-          
-          <div class="result-highlight rounded-lg p-4">
-            <h4 class="font-medium text-gray-700 mb-2 flex items-center">
-              <i class="fas fa-tag text-blue-500 mr-2"></i> Pricing & Revenue
-            </h4>
-            ${renderResultItem('Original Price (MRP per unit)', salesPriceMrpPerUnit, 'currency', 'tag')}
-            ${renderResultItem('Discount', discountPercentage, 'percentage', 'tags', 2)}
-            ${renderResultItem('Sale Price (per unit, after discount)', salePriceAfterDiscount, 'currency', 'cash-register')}
-            ${renderResultItem(`Total Revenue for ${qty} Units`, totalRevenue, 'currency', 'coins')}
-          </div>
-          
-          <div class="result-highlight rounded-lg p-4">
-            <h4 class="font-medium text-gray-700 mb-2 flex items-center">
-              <i class="fas fa-chart-line text-blue-500 mr-2"></i> Profit Metrics
-            </h4>
-            ${renderResultItem('Gross Profit', grossProfit, 'currency', 'arrow-up')}
-            ${renderResultItem('Gross Margin', grossProfitPercentage, 'percentage', 'chart-pie', 2)}
-            ${renderResultItem('Markup Percentage (on unit cost)', markupPercentage, 'percentage', 'chart-line', 2)}
-            ${showAdvancedCheckbox.checked ? renderResultItem('Operating Costs (Total)', operatingCostAmount, 'currency', 'cogs') : ''}
-            ${showAdvancedCheckbox.checked ? renderResultItem('Total Additional Expenses', totalExpenses, 'currency', 'receipt') : ''}
-            ${renderResultItem('Net Profit', netProfit, 'currency', 'hand-holding-usd')}
-            ${renderResultItem('Net Margin', netProfitPercentage, 'percentage', 'chart-bar', 2)}
-          </div>
-        </div>
-      `;
-      
-      const unitGrossProfit = salePriceAfterDiscount - unitPriceAfterTax;
-
-      keyMetricsCard.innerHTML = `
-        <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
-          <div class="flex items-center mb-2">
-            <i class="fas fa-percentage text-blue-500 mr-2"></i>
-            <span class="font-medium text-sm text-blue-700">Net Profit Margin</span>
-          </div>
-          <h3 class="text-2xl font-bold text-blue-800">${formatOutput(netProfitPercentage, 'percentage', 1)}</h3>
-          <p class="text-xs text-blue-600 mt-1">${formatOutput(netProfit, 'currency')} net profit total</p>
-        </div>
         
-        <div class="bg-green-50 border border-green-100 rounded-lg p-4">
-          <div class="flex items-center mb-2">
-            <i class="fas fa-chart-line text-green-500 mr-2"></i>
-            <span class="font-medium text-sm text-green-700">Markup %</span>
-          </div>
-          <h3 class="text-2xl font-bold text-green-800">${formatOutput(markupPercentage, 'percentage', 1)}</h3>
-          <p class="text-xs text-green-600 mt-1">on ${formatOutput(unitPriceAfterTax, 'currency')} unit cost</p>
-        </div>
-        
-        <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
-          <div class="flex items-center mb-2">
-            <i class="fas fa-bullseye text-purple-500 mr-2"></i>
-            <span class="font-medium text-sm text-purple-700">Break-even Units</span>
-          </div>
-          <h3 class="text-2xl font-bold text-purple-800">${formatOutput(breakEvenQty, 'qty', 0)}</h3>
-          <p class="text-xs text-purple-600 mt-1">units to cover fixed costs</p>
-        </div>
-        
-        <div class="bg-orange-50 border border-orange-100 rounded-lg p-4">
-          <div class="flex items-center mb-2">
-            <i class="fas fa-dollar-sign text-orange-500 mr-2"></i>
-            <span class="font-medium text-sm text-orange-700">Unit Gross Profit</span>
-          </div>
-          <h3 class="text-2xl font-bold text-orange-800">${formatOutput(unitGrossProfit, 'currency')}</h3>
-          <p class="text-xs text-orange-600 mt-1">before op. & shipping costs</p>
-        </div>
-      `;
-      
-      resultsContainer.classList.remove('hidden');
+        console.log("Trying to SHOW results container now"); // <-- ADDED THIS LINE
+        resultsContainer.classList.remove('hidden');
     }
     
     // Event listeners
@@ -471,6 +473,7 @@
             shippingCostInput.value = "0"; // Or your desired default when hidden
             operatingCostInput.value = "0"; // Or your desired default when hidden
         }
+        console.log("Attempting INITIAL calculation on page load"); // <-- ADDED THIS LINE
         calculatePricing(); // Call without event object
         calculateButton.classList.add('animate-pulse');
         setTimeout(() => calculateButton.classList.remove('animate-pulse'), 2000);
