@@ -1,1 +1,466 @@
-<!DOCTYPE html><html lang="en"><head> <meta charset="UTF-8"> <meta name="viewport" content="width=device-width, initial-scale=1.0"> <title>Product Price Calculator</title> <script src="https://cdn.tailwindcss.com"></script> <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"> <style> body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; /* Light gray background */ } .calculator-container { background-color: #ffffff; padding: 2rem; border-radius: 0.75rem; /* 12px */ box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-width: 600px; margin: 2rem auto; } .input-group { margin-bottom: 1.5rem; /* 24px */ } .input-label { display: block; margin-bottom: 0.5rem; /* 8px */ font-weight: 500; color: #374151; /* Gray-700 */ } .input-field { width: 100%; padding: 0.75rem; /* 12px */ border: 1px solid #d1d5db; /* Gray-300 */ border-radius: 0.375rem; /* 6px */ box-sizing: border-box; transition: border-color 0.2s; } .input-field:focus { outline: none; border-color: #2563eb; /* Blue-600 */ box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3); } .calculate-button { width: 100%; padding: 0.875rem; /* 14px */ background-color: #2563eb; /* Blue-600 */ color: white; font-weight: 600; border: none; border-radius: 0.375rem; /* 6px */ cursor: pointer; transition: background-color 0.2s; } .calculate-button:hover { background-color: #1d4ed8; /* Blue-700 */ } .results-container { margin-top: 2rem; /* 32px */ padding: 1.5rem; /* 24px */ background-color: #f9fafb; /* Gray-50 */ border-radius: 0.5rem; /* 8px */ border: 1px solid #e5e7eb; /* Gray-200 */ } .results-title { font-size: 1.25rem; /* 20px */ font-weight: 600; margin-bottom: 1rem; /* 16px */ color: #111827; /* Gray-900 */ } .result-item { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb; /* Gray-200 */ font-size: 0.95rem; /* slightly increased font size */ } .result-item:last-child { border-bottom: none; } .result-label { color: #4b5563; /* Gray-600 */ font-weight: 500; } .result-value { color: #1f2937; /* Gray-800 */ font-weight: 600; } .error-message { color: #ef4444; /* Red-500 */ background-color: #fee2e2; /* Red-100 */ border: 1px solid #fca5a5; /* Red-300 */ padding: 0.75rem; border-radius: 0.375rem; margin-bottom: 1.5rem; text-align: center; } .info-message { color: #1e40af; /* Blue-800 */ background-color: #dbeafe; /* Blue-100 */ border: 1px solid #93c5fd; /* Blue-300 */ padding: 0.75rem; border-radius: 0.375rem; margin-top: 1.5rem; text-align: center; font-size: 0.875rem; /* 14px */ } </style></head><body class="p-4 md:p-8"> <div class="calculator-container"> <h1 class="text-2xl md:text-3xl font-bold text-center mb-8 text-gray-800">Product Price & Margin Calculator</h1> <div id="error-display" class="hidden"></div> <div class="input-group"> <label for="productName" class="input-label">Product Name:</label> <input type="text" id="productName" class="input-field" value="My Product"> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"> <div class="input-group"> <label for="quantity" class="input-label">Product Quantity:</label> <input type="number" id="quantity" class="input-field" value="10" min="0"> </div> <div class="input-group"> <label for="unitPriceBeforeTax" class="input-label">Unit Price (before tax):</label> <input type="number" id="unitPriceBeforeTax" class="input-field" value="100.00" step="0.01" min="0"> </div> </div> <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"> <div class="input-group"> <label for="gstPercentage" class="input-label">GST Percentage (%):</label> <select id="gstPercentage" class="input-field"> <option value="0">0% (Tax Exempt)</option> <option value="3">3%</option> <option value="5">5%</option> <option value="12">12%</option> <option value="18" selected>18%</option> <option value="28">28%</option> </select> </div> <div class="input-group"> <label for="salesPriceMrp" class="input-label">Sales Price/MRP (per unit):</label> <input type="number" id="salesPriceMrp" class="input-field" value="150.00" step="0.01" min="0"> </div> </div> <button id="calculateButton" class="calculate-button">Calculate</button> <div id="resultsContainer" class="results-container hidden"> <h2 id="resultsTitle" class="results-title"></h2> <div id="resultsOutput"></div> <div id="info-message-display" class="info-message hidden"> Note: Markup is calculated based on the cost (unit price after tax). Margin is calculated based on the sales price (MRP). </div> </div> </div> <script> // --- Calculation Functions (ported from Python) --- function calculateSubtotalBeforeTax(quantity, unitPriceBeforeTax) { return quantity * unitPriceBeforeTax; } function calculateProductUnitPriceAfterTax(unitPriceBeforeTax, taxRateDecimal) { return unitPriceBeforeTax * (1 + taxRateDecimal); } function calculateSubtotalAfterTax(quantity, unitPriceAfterTax) { return quantity * unitPriceAfterTax; } function calculateMarginPercentage(salesPriceMrpPerUnit, productUnitPriceAfterTax) { if (salesPriceMrpPerUnit === 0) { return 0; } const profitPerUnit = salesPriceMrpPerUnit - productUnitPriceAfterTax; const margin = (profitPerUnit / salesPriceMrpPerUnit) * 100; return margin; } function calculateMarkupPercentage(salesPriceMrpPerUnit, productUnitPriceAfterTax) { if (productUnitPriceAfterTax === 0) { return (salesPriceMrpPerUnit > 0) ? Infinity : 0; } const profitPerUnit = salesPriceMrpPerUnit - productUnitPriceAfterTax; const markup = (profitPerUnit / productUnitPriceAfterTax) * 100; return markup; } // --- DOM Elements --- const productNameInput = document.getElementById('productName'); const quantityInput = document.getElementById('quantity'); const unitPriceBeforeTaxInput = document.getElementById('unitPriceBeforeTax'); const gstPercentageInput = document.getElementById('gstPercentage'); const salesPriceMrpInput = document.getElementById('salesPriceMrp'); const calculateButton = document.getElementById('calculateButton'); const resultsContainer = document.getElementById('resultsContainer'); const resultsTitleElement = document.getElementById('resultsTitle'); const resultsOutputDiv = document.getElementById('resultsOutput'); const errorDisplayDiv = document.getElementById('error-display'); const infoMessageDiv = document.getElementById('info-message-display'); // --- Event Listener --- calculateButton.addEventListener('click', displayProductCalculations); // --- Main Display Function --- function displayProductCalculations() { // Clear previous errors and results errorDisplayDiv.innerHTML = ''; errorDisplayDiv.classList.add('hidden'); resultsOutputDiv.innerHTML = ''; resultsContainer.classList.add('hidden'); infoMessageDiv.classList.add('hidden'); // Get input values const productName = productNameInput.value.trim() || "Unnamed Product"; const qty = parseFloat(quantityInput.value); const unitPriceBeforeTax = parseFloat(unitPriceBeforeTaxInput.value); const selectedGstPercentage = parseFloat(gstPercentageInput.value); const salesPriceMrpPerUnit = parseFloat(salesPriceMrpInput.value); // --- Input Validation --- let errors = []; if (isNaN(qty) || qty < 0) { errors.push("Product Quantity must be a non-negative number."); quantityInput.classList.add('border-red-500'); } else { quantityInput.classList.remove('border-red-500'); } if (isNaN(unitPriceBeforeTax) || unitPriceBeforeTax < 0) { errors.push("Unit Price (before tax) must be a non-negative number."); unitPriceBeforeTaxInput.classList.add('border-red-500'); } else { unitPriceBeforeTaxInput.classList.remove('border-red-500'); } if (isNaN(selectedGstPercentage) || selectedGstPercentage < 0) { errors.push("GST Percentage must be a non-negative number."); gstPercentageInput.classList.add('border-red-500'); } else { gstPercentageInput.classList.remove('border-red-500'); } if (isNaN(salesPriceMrpPerUnit) || salesPriceMrpPerUnit < 0) { errors.push("Sales Price/MRP must be a non-negative number."); salesPriceMrpInput.classList.add('border-red-500'); } else { salesPriceMrpInput.classList.remove('border-red-500'); } if (errors.length > 0) { errorDisplayDiv.classList.remove('hidden'); errorDisplayDiv.classList.add('error-message'); errorDisplayDiv.innerHTML = "<strong>Please correct the following errors:</strong><ul class='list-disc list-inside mt-2'>" + errors.map(e => `<li>${e}</li>`).join('') + "</ul>"; resultsContainer.classList.add('hidden'); return; } // --- Perform Calculations --- resultsTitleElement.textContent = `--- Calculation for: ${productName} ---`; let outputHtml = ''; // Helper to add result items function addResultItem(label, value, isCurrency = true, isPercentage = false) { let formattedValue = value; if (isCurrency) { formattedValue = `$${value.toFixed(2)}`; } else if (isPercentage) { formattedValue = `${value.toFixed(2)}%`; if (value === Infinity) formattedValue = "Infinite % (Cost is zero)"; } outputHtml += ` <div class="result-item"> <span class="result-label">${label}:</span> <span class="result-value">${formattedValue}</span> </div> `; } // 1. Product Qty addResultItem("1. Product Qty", qty, false); // 2. Product Unit Price (before tax) addResultItem("2. Product Unit Price (before tax)", unitPriceBeforeTax); // 3. Subtotal before tax const subtotalBeforeTaxVal = calculateSubtotalBeforeTax(qty, unitPriceBeforeTax); addResultItem("3. Subtotal before tax", subtotalBeforeTaxVal); // Tax details const taxRateDecimal = selectedGstPercentage / 100.0; const taxName = `GST ${selectedGstPercentage}%`; outputHtml += ` <div class="result-item"> <span class="result-label pl-4">Tax Name:</span> <span class="result-value">${taxName}</span> </div> `; // 4. Product unit price after tax const unitPriceAfterTaxVal = calculateProductUnitPriceAfterTax(unitPriceBeforeTax, taxRateDecimal); addResultItem("4. Product Unit Price after tax", unitPriceAfterTaxVal); // 5. Subtotal after tax const subtotalAfterTaxVal = calculateSubtotalAfterTax(qty, unitPriceAfterTaxVal); addResultItem("5. Subtotal after tax", subtotalAfterTaxVal); // 6. Effective rate per unit const effectiveRateVal = unitPriceAfterTaxVal; addResultItem("6. Effective rate per unit", effectiveRateVal); // 7. Sales price/MRP (per unit) addResultItem("7. Sales Price/MRP (per unit)", salesPriceMrpPerUnit); // 8. Sales markup percentage / margin percentage const marginPercentageVal = calculateMarginPercentage(salesPriceMrpPerUnit, unitPriceAfterTaxVal); const markupPercentageVal = calculateMarkupPercentage(salesPriceMrpPerUnit, unitPriceAfterTaxVal); addResultItem("8. Sales Margin Percentage", marginPercentageVal, false, true); outputHtml += ` <div class="result-item"> <span class="result-label pl-4">Sales Markup Percentage:</span> <span class="result-value">${markupPercentageVal === Infinity ? "Infinite % (Cost is zero)" : markupPercentageVal.toFixed(2) + '%'}</span> </div> `; resultsOutputDiv.innerHTML = outputHtml; resultsContainer.classList.remove('hidden'); infoMessageDiv.classList.remove('hidden'); } // Initial calculation on load with default values (optional, but good for demo) // window.onload = displayProductCalculations; // Uncomment if you want it to run on page load </script></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Advanced Product Calculator</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .gradient-bg {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      min-height: 100vh;
+    }
+    .glow {
+      box-shadow: 0 0 15px rgba(66, 153, 225, 0.5);
+    }
+    input:focus, select:focus {
+      box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.2);
+    }
+    .result-highlight {
+      background-color: #ebf8ff;
+      border-left: 4px solid #4299e1;
+    }
+    .animate-pulse {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.8; }
+    }
+    .scrollbar-hide::-webkit-scrollbar {
+      display: none;
+    }
+    .scrollbar-hide {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+  </style>
+</head>
+<body class="gradient-bg">
+  <div class="container mx-auto px-4 py-8 md:py-12">
+    <div class="max-w-3xl mx-auto">
+      <div class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-2">
+          <i class="fas fa-calculator text-blue-500 mr-2"></i>
+          Advanced Product Pricing Calculator
+        </h1>
+        <p class="text-gray-600 max-w-lg mx-auto">
+          Calculate pricing, margins, taxes, and profits for your products with precision
+        </p>
+      </div>
+
+      <div class="bg-white rounded-xl shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-r from-blue-600 to-blue-500 p-6 text-white">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold">
+              <i class="fas fa-box-open mr-2"></i>
+              Product Details
+            </h2>
+            <div class="flex space-x-2">
+              <button class="p-2 rounded-full bg-blue-700 hover:bg-blue-800 transition" title="Help (Not Implemented)">
+                <i class="fas fa-question-circle"></i>
+              </button>
+              <button class="p-2 rounded-full bg-blue-700 hover:bg-blue-800 transition" title="Reset (Not Implemented)" onclick="if(confirm('Reset fields to default? This example does not implement reset.')) { /* TODO: Implement reset logic */ }">
+                <i class="fas fa-redo"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-6">
+          <div id="error-display" class="hidden mb-4"></div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label for="productName" class="block text-sm font-medium text-gray-700 mb-1">
+                <i class="fas fa-tag mr-1 text-blue-500"></i> Product Name
+              </label>
+              <div class="relative">
+                <input type="text" id="productName" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" placeholder="Enter product name" value="Premium Widget">
+                <div class="absolute right-3 top-2.5 text-gray-400">
+                  <i class="fas fa-asterisk text-xs text-red-500" title="Required field"></i>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
+                <i class="fas fa-boxes mr-1 text-blue-500"></i> Quantity
+              </label>
+              <div class="relative">
+                <input type="number" id="quantity" min="1" step="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" value="50">
+                <div class="absolute right-3 top-2.5 text-gray-400">
+                  <i class="fas fa-hashtag"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label for="unitPriceBeforeTax" class="block text-sm font-medium text-gray-700 mb-1">
+                <i class="fas fa-tag mr-1 text-blue-500"></i> Unit Cost (before tax)
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 sm:text-sm">$</span>
+                </div>
+                <input type="number" id="unitPriceBeforeTax" min="0" step="0.01" class="pl-7 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" value="24.99">
+              </div>
+            </div>
+
+            <div>
+              <label for="salesPriceMrp" class="block text-sm font-medium text-gray-700 mb-1">
+                <i class="fas fa-dollar-sign mr-1 text-blue-500"></i> Selling Price (MRP)
+              </label>
+              <div class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <span class="text-gray-500 sm:text-sm">$</span>
+                </div>
+                <input type="number" id="salesPriceMrp" min="0" step="0.01" class="pl-7 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" value="39.99">
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+              <label for="gstPercentage" class="block text-sm font-medium text-gray-700 mb-1">
+                <i class="fas fa-percent mr-1 text-blue-500"></i> Tax Rate
+              </label>
+              <select id="gstPercentage" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition text-gray-700">
+                <option value="0">0% (Tax Exempt)</option>
+                <option value="5">5%</option>
+                <option value="12" selected>12%</option>
+                <option value="18">18%</option>
+                <option value="28">28%</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="discountPercentage" class="block text-sm font-medium text-gray-700 mb-1">
+                <i class="fas fa-tags mr-1 text-blue-500"></i> Discount (%)
+              </label>
+              <div class="relative">
+                <input type="number" id="discountPercentage" min="0" max="100" step="0.5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" value="10">
+                <div class="absolute right-3 top-2.5 text-gray-400">
+                  <i class="fas fa-percent"></i>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <div class="flex items-center">
+              <input type="checkbox" id="showAdvanced" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+              <label for="showAdvanced" class="ml-2 block text-sm text-gray-700">
+                Show advanced options
+              </label>
+            </div>
+            <div id="advancedOptions" class="hidden mt-4 space-y-4 border-t pt-4">
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label for="shippingCost" class="block text-sm font-medium text-gray-700 mb-1">
+                    <i class="fas fa-truck mr-1 text-blue-500"></i> Shipping Cost (Total)
+                  </label>
+                  <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <span class="text-gray-500 sm:text-sm">$</span>
+                    </div>
+                    <input type="number" id="shippingCost" min="0" step="0.01" class="pl-7 w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" value="5.99">
+                  </div>
+                </div>
+                <div>
+                  <label for="operatingCost" class="block text-sm font-medium text-gray-700 mb-1">
+                    <i class="fas fa-cogs mr-1 text-blue-500"></i> Operating Cost (% of Revenue)
+                  </label>
+                  <div class="relative">
+                    <input type="number" id="operatingCost" min="0" max="100" step="0.1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition" value="12">
+                    <div class="absolute right-3 top-2.5 text-gray-400">
+                      <i class="fas fa-percent"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <button id="calculateButton" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-[1.01] glow mb-6">
+            <i class="fas fa-calculator mr-2"></i> Calculate Pricing
+          </button>
+
+          <div id="resultsContainer" class="hidden bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+            <div class="bg-gray-100 px-6 py-4 border-b border-gray-200">
+              <h3 class="text-lg font-medium text-gray-800 flex items-center">
+                <i class="fas fa-chart-bar text-blue-500 mr-2"></i>
+                Calculation Results for:
+                <span id="productNameLabel" class="ml-2 text-blue-600 font-semibold">Premium Widget</span>
+              </h3>
+            </div>
+
+            <div class="p-6">
+              <div id="resultsOutput" class="space-y-4"></div>
+
+              <div id="keyMetricsCard" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-3 border-t border-gray-200 text-center text-sm text-gray-500">
+              <i class="fas fa-info-circle mr-1"></i>
+              Note: Markup is based on cost price, while margin is based on selling price.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-6 text-center text-xs text-gray-400">
+        <p>This calculator is for informational purposes only. Actual prices may vary based on market conditions.</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // DOM Elements
+    const productNameInput = document.getElementById('productName');
+    const quantityInput = document.getElementById('quantity');
+    const unitPriceBeforeTaxInput = document.getElementById('unitPriceBeforeTax');
+    const gstPercentageInput = document.getElementById('gstPercentage');
+    const salesPriceMrpInput = document.getElementById('salesPriceMrp');
+    const discountPercentageInput = document.getElementById('discountPercentage');
+    const shippingCostInput = document.getElementById('shippingCost');
+    const operatingCostInput = document.getElementById('operatingCost');
+    const showAdvancedCheckbox = document.getElementById('showAdvanced');
+    const advancedOptionsDiv = document.getElementById('advancedOptions');
+    const calculateButton = document.getElementById('calculateButton');
+    const errorDisplayDiv = document.getElementById('error-display');
+    const resultsContainer = document.getElementById('resultsContainer');
+    const resultsOutputDiv = document.getElementById('resultsOutput');
+    const keyMetricsCard = document.getElementById('keyMetricsCard');
+    const productNameLabel = document.getElementById('productNameLabel');
+
+    // Toggle advanced options
+    showAdvancedCheckbox.addEventListener('change', function() {
+      advancedOptionsDiv.classList.toggle('hidden', !this.checked);
+    });
+
+    // Helper function for formatting numbers
+    const formatOutput = (num, type = 'currency', decimals = 2) => {
+        if (type === 'percentage' && num === Infinity) return "Infinite %";
+        if (type === 'qty' && num === Infinity) return "Cannot calculate"; // For break-even
+
+        if (isNaN(num) || !isFinite(num)) {
+            if (type === 'currency') return "$N/A";
+            if (type === 'percentage') return "N/A %";
+            if (type === 'qty') return "N/A";
+            return "N/A";
+        }
+
+        if (type === 'currency') return `$${num.toFixed(decimals)}`;
+        if (type === 'percentage') return `${num.toFixed(decimals)}%`;
+        if (type === 'qty') return Math.ceil(num).toString(); // Typically for whole units
+        return num.toFixed(decimals); // Generic number formatting
+    };
+
+
+    // Main calculation function
+    function calculatePricing(e) {
+        console.log("calculatePricing function HAS STARTED"); 
+        if (e) e.preventDefault(); 
+
+        errorDisplayDiv.innerHTML = '';
+        errorDisplayDiv.classList.add('hidden');
+        
+        const productName = productNameInput.value.trim() || "Unnamed Product";
+        const qty = parseFloat(quantityInput.value);
+        const unitPriceBeforeTax = parseFloat(unitPriceBeforeTaxInput.value);
+        const selectedGstPercentage = parseFloat(gstPercentageInput.value);
+        const salesPriceMrpPerUnit = parseFloat(salesPriceMrpInput.value);
+        const discountPercentage = parseFloat(discountPercentageInput.value);
+        
+        let shippingCost = 0;
+        let operatingCostPercentage = 0;
+        if (showAdvancedCheckbox.checked) {
+            shippingCost = parseFloat(shippingCostInput.value) || 0;
+            operatingCostPercentage = parseFloat(operatingCostInput.value) || 0;
+        }
+        
+        const errors = [];
+        if (!productNameInput.value.trim()) errors.push("Product name is required");
+        if (isNaN(qty) || qty <= 0) errors.push("Quantity must be a positive number");
+        if (isNaN(unitPriceBeforeTax) || unitPriceBeforeTax < 0) errors.push("Unit cost must be a non-negative number");
+        if (isNaN(selectedGstPercentage) || selectedGstPercentage < 0) errors.push("Tax rate must be a non-negative number");
+        if (isNaN(salesPriceMrpPerUnit) || salesPriceMrpPerUnit <= 0) errors.push("Selling price must be a positive number");
+        if (isNaN(discountPercentage) || discountPercentage < 0 || discountPercentage > 100) errors.push("Discount must be between 0-100%");
+        if (showAdvancedCheckbox.checked) {
+          if (isNaN(shippingCost) || shippingCost < 0) errors.push("Shipping cost must be a non-negative number.");
+          if (isNaN(operatingCostPercentage) || operatingCostPercentage < 0 || operatingCostPercentage > 100) errors.push("Operating cost must be between 0-100%.");
+        }
+
+        if (errors.length > 0) {
+          console.error("Validation FAILED. Errors:", JSON.stringify(errors)); // <-- MODIFIED THIS LINE
+          errorDisplayDiv.classList.remove('hidden');
+          errorDisplayDiv.innerHTML = `
+            <div class="bg-red-50 border-l-4 border-red-400 p-4">
+              <div class="flex">
+                <div class="flex-shrink-0">
+                  <i class="fas fa-exclamation-circle text-red-400"></i>
+                </div>
+                <div class="ml-3">
+                  <h3 class="text-sm font-medium text-red-800">Please correct the following errors:</h3>
+                  <div class="mt-2 text-sm text-red-700">
+                    <ul class="list-disc pl-5 space-y-1">
+                      ${errors.map(err => `<li>${err}</li>`).join('')}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          `;
+          resultsContainer.classList.add('hidden');
+          return;
+        }
+        
+        const taxRateDecimal = selectedGstPercentage / 100;
+        const discountRate = discountPercentage / 100;
+        const unitPriceAfterTax = unitPriceBeforeTax * (1 + taxRateDecimal);
+        const subtotalAfterTax = qty * unitPriceAfterTax; 
+        const salePriceAfterDiscount = salesPriceMrpPerUnit * (1 - discountRate);
+        const totalRevenue = qty * salePriceAfterDiscount;
+        const costOfGoodsSold = unitPriceAfterTax * qty; 
+        const grossProfit = totalRevenue - costOfGoodsSold;
+        const grossProfitPercentage = totalRevenue !== 0 ? (grossProfit / totalRevenue) * 100 : 0;
+        const markupPercentage = unitPriceAfterTax !== 0 ? ((salePriceAfterDiscount - unitPriceAfterTax) / unitPriceAfterTax) * 100 : Infinity;
+        const operatingCostAmount = totalRevenue * (operatingCostPercentage / 100);
+        const totalFixedExpenses = shippingCost; 
+        const totalVariableExpensesNotCOGS = operatingCostAmount;
+        const totalExpenses = totalVariableExpensesNotCOGS + totalFixedExpenses;
+        const netProfit = grossProfit - totalExpenses;
+        const netProfitPercentage = totalRevenue !== 0 ? (netProfit / totalRevenue) * 100 : 0;
+        
+        let breakEvenQty;
+        const effectiveUnitVariableCost = unitPriceAfterTax + (salePriceAfterDiscount * (operatingCostPercentage / 100));
+        const unitContributionToFixedCosts = salePriceAfterDiscount - effectiveUnitVariableCost;
+
+        if (unitContributionToFixedCosts <= 0) {
+            breakEvenQty = (totalFixedExpenses > 0) ? Infinity : 0; 
+        } else {
+            breakEvenQty = totalFixedExpenses / unitContributionToFixedCosts; 
+        }
+        
+        productNameLabel.textContent = productName;
+        
+        const renderResultItem = (label, value, type = 'currency', icon = 'info-circle', decimals = 2) => {
+          return `
+            <div class="flex justify-between py-2 border-b border-gray-200 last:border-0">
+              <div class="flex items-center text-gray-700">
+                <i class="fas fa-${icon} text-blue-400 mr-2"></i>
+                <span class="text-sm font-medium">${label}</span>
+              </div>
+              <div class="text-gray-900 font-medium">
+                ${formatOutput(value, type, decimals)}
+              </div>
+            </div>
+          `;
+        };
+        
+        resultsOutputDiv.innerHTML = `
+          <div class="space-y-4">
+            <div class="result-highlight rounded-lg p-4">
+              <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-dollar-sign text-blue-500 mr-2"></i> Cost Breakdown
+              </h4>
+              ${renderResultItem('Unit Cost (before tax)', unitPriceBeforeTax, 'currency', 'file-invoice-dollar')}
+              ${renderResultItem('Tax Rate', selectedGstPercentage, 'percentage', 'percentage', 2)}
+              ${renderResultItem('Unit Cost (after tax)', unitPriceAfterTax, 'currency', 'money-check-alt')}
+              ${renderResultItem(`Total Cost for ${qty} Units (after tax)`, subtotalAfterTax, 'currency', 'cart-plus')}
+              ${showAdvancedCheckbox.checked ? renderResultItem('Shipping Cost (Total Fixed)', shippingCost, 'currency', 'truck') : ''}
+            </div>
+            
+            <div class="result-highlight rounded-lg p-4">
+              <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-tag text-blue-500 mr-2"></i> Pricing & Revenue
+              </h4>
+              ${renderResultItem('Original Price (MRP per unit)', salesPriceMrpPerUnit, 'currency', 'tag')}
+              ${renderResultItem('Discount', discountPercentage, 'percentage', 'tags', 2)}
+              ${renderResultItem('Sale Price (per unit, after discount)', salePriceAfterDiscount, 'currency', 'cash-register')}
+              ${renderResultItem(`Total Revenue for ${qty} Units`, totalRevenue, 'currency', 'coins')}
+            </div>
+            
+            <div class="result-highlight rounded-lg p-4">
+              <h4 class="font-medium text-gray-700 mb-2 flex items-center">
+                <i class="fas fa-chart-line text-blue-500 mr-2"></i> Profit Metrics
+              </h4>
+              ${renderResultItem('Gross Profit', grossProfit, 'currency', 'arrow-up')}
+              ${renderResultItem('Gross Margin', grossProfitPercentage, 'percentage', 'chart-pie', 2)}
+              ${renderResultItem('Markup Percentage (on unit cost)', markupPercentage, 'percentage', 'chart-line', 2)}
+              ${showAdvancedCheckbox.checked ? renderResultItem('Operating Costs (Total)', operatingCostAmount, 'currency', 'cogs') : ''}
+              ${showAdvancedCheckbox.checked ? renderResultItem('Total Additional Expenses', totalExpenses, 'currency', 'receipt') : ''}
+              ${renderResultItem('Net Profit', netProfit, 'currency', 'hand-holding-usd')}
+              ${renderResultItem('Net Margin', netProfitPercentage, 'percentage', 'chart-bar', 2)}
+            </div>
+          </div>
+        `;
+        
+        const unitGrossProfit = salePriceAfterDiscount - unitPriceAfterTax;
+
+        keyMetricsCard.innerHTML = `
+          <div class="bg-blue-50 border border-blue-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-percentage text-blue-500 mr-2"></i>
+              <span class="font-medium text-sm text-blue-700">Net Profit Margin</span>
+            </div>
+            <h3 class="text-2xl font-bold text-blue-800">${formatOutput(netProfitPercentage, 'percentage', 1)}</h3>
+            <p class="text-xs text-blue-600 mt-1">${formatOutput(netProfit, 'currency')} net profit total</p>
+          </div>
+          
+          <div class="bg-green-50 border border-green-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-chart-line text-green-500 mr-2"></i>
+              <span class="font-medium text-sm text-green-700">Markup %</span>
+            </div>
+            <h3 class="text-2xl font-bold text-green-800">${formatOutput(markupPercentage, 'percentage', 1)}</h3>
+            <p class="text-xs text-green-600 mt-1">on ${formatOutput(unitPriceAfterTax, 'currency')} unit cost</p>
+          </div>
+          
+          <div class="bg-purple-50 border border-purple-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-bullseye text-purple-500 mr-2"></i>
+              <span class="font-medium text-sm text-purple-700">Break-even Units</span>
+            </div>
+            <h3 class="text-2xl font-bold text-purple-800">${formatOutput(breakEvenQty, 'qty', 0)}</h3>
+            <p class="text-xs text-purple-600 mt-1">units to cover fixed costs</p>
+          </div>
+          
+          <div class="bg-orange-50 border border-orange-100 rounded-lg p-4">
+            <div class="flex items-center mb-2">
+              <i class="fas fa-dollar-sign text-orange-500 mr-2"></i>
+              <span class="font-medium text-sm text-orange-700">Unit Gross Profit</span>
+            </div>
+            <h3 class="text-2xl font-bold text-orange-800">${formatOutput(unitGrossProfit, 'currency')}</h3>
+            <p class="text-xs text-orange-600 mt-1">before op. & shipping costs</p>
+          </div>
+        `;
+        
+        console.log("Trying to SHOW results container now"); 
+        resultsContainer.classList.remove('hidden');
+    }
+    
+    // Event listeners
+    calculateButton.addEventListener('click', calculatePricing);
+    
+    // Initialize with first calculation on load
+    window.addEventListener('load', function() {
+      setTimeout(() => {
+        if (!showAdvancedCheckbox.checked) {
+            shippingCostInput.value = "0"; 
+            operatingCostInput.value = "0"; 
+        }
+        console.log("Attempting INITIAL calculation on page load"); 
+        calculatePricing(); 
+        calculateButton.classList.add('animate-pulse');
+        setTimeout(() => calculateButton.classList.remove('animate-pulse'), 2000);
+      }, 100); 
+    });
+  </script>
+</body>
+</html>
