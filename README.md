@@ -264,17 +264,12 @@
 
     // Main calculation function
     function calculatePricing(e) {
-        console.log("calculatePricing function HAS STARTED"); // <-- ADDED THIS LINE
-        if (e) e.preventDefault(); // Allow calling without event
+        console.log("calculatePricing function HAS STARTED"); 
+        if (e) e.preventDefault(); 
 
-        // Clear previous errors and results
         errorDisplayDiv.innerHTML = '';
         errorDisplayDiv.classList.add('hidden');
-        // resultsOutputDiv.innerHTML = ''; // Cleared later by population
-        // keyMetricsCard.innerHTML = ''; // Cleared later by population
-        // resultsContainer.classList.add('hidden'); // Shown at the end
-
-        // Get input values
+        
         const productName = productNameInput.value.trim() || "Unnamed Product";
         const qty = parseFloat(quantityInput.value);
         const unitPriceBeforeTax = parseFloat(unitPriceBeforeTaxInput.value);
@@ -289,7 +284,6 @@
             operatingCostPercentage = parseFloat(operatingCostInput.value) || 0;
         }
         
-        // Input validation
         const errors = [];
         if (!productNameInput.value.trim()) errors.push("Product name is required");
         if (isNaN(qty) || qty <= 0) errors.push("Quantity must be a positive number");
@@ -302,8 +296,8 @@
           if (isNaN(operatingCostPercentage) || operatingCostPercentage < 0 || operatingCostPercentage > 100) errors.push("Operating cost must be between 0-100%.");
         }
 
-
         if (errors.length > 0) {
+          console.error("Validation FAILED. Errors:", JSON.stringify(errors)); // <-- MODIFIED THIS LINE
           errorDisplayDiv.classList.remove('hidden');
           errorDisplayDiv.innerHTML = `
             <div class="bg-red-50 border-l-4 border-red-400 p-4">
@@ -326,44 +320,33 @@
           return;
         }
         
-        // Calculations
         const taxRateDecimal = selectedGstPercentage / 100;
         const discountRate = discountPercentage / 100;
-        
         const unitPriceAfterTax = unitPriceBeforeTax * (1 + taxRateDecimal);
-        const subtotalAfterTax = qty * unitPriceAfterTax; // Total cost of goods for the quantity
-
+        const subtotalAfterTax = qty * unitPriceAfterTax; 
         const salePriceAfterDiscount = salesPriceMrpPerUnit * (1 - discountRate);
         const totalRevenue = qty * salePriceAfterDiscount;
-        
-        const costOfGoodsSold = unitPriceAfterTax * qty; // Same as subtotalAfterTax
+        const costOfGoodsSold = unitPriceAfterTax * qty; 
         const grossProfit = totalRevenue - costOfGoodsSold;
-        
         const grossProfitPercentage = totalRevenue !== 0 ? (grossProfit / totalRevenue) * 100 : 0;
         const markupPercentage = unitPriceAfterTax !== 0 ? ((salePriceAfterDiscount - unitPriceAfterTax) / unitPriceAfterTax) * 100 : Infinity;
-        
         const operatingCostAmount = totalRevenue * (operatingCostPercentage / 100);
-        const totalFixedExpenses = shippingCost; // Assuming shipping is the main fixed expense for this batch calculation
+        const totalFixedExpenses = shippingCost; 
         const totalVariableExpensesNotCOGS = operatingCostAmount;
         const totalExpenses = totalVariableExpensesNotCOGS + totalFixedExpenses;
-
         const netProfit = grossProfit - totalExpenses;
         const netProfitPercentage = totalRevenue !== 0 ? (netProfit / totalRevenue) * 100 : 0;
         
-        // Break-even point
         let breakEvenQty;
-        // Variable cost per unit = unit cost after tax + (selling price per unit * operating cost percentage)
         const effectiveUnitVariableCost = unitPriceAfterTax + (salePriceAfterDiscount * (operatingCostPercentage / 100));
-        // Contribution margin per unit = selling price - all variable costs per unit
         const unitContributionToFixedCosts = salePriceAfterDiscount - effectiveUnitVariableCost;
 
         if (unitContributionToFixedCosts <= 0) {
             breakEvenQty = (totalFixedExpenses > 0) ? Infinity : 0; 
         } else {
-            breakEvenQty = totalFixedExpenses / unitContributionToFixedCosts; // No Math.ceil here, formatOutput will handle
+            breakEvenQty = totalFixedExpenses / unitContributionToFixedCosts; 
         }
         
-        // Show results
         productNameLabel.textContent = productName;
         
         const renderResultItem = (label, value, type = 'currency', icon = 'info-circle', decimals = 2) => {
@@ -458,7 +441,7 @@
           </div>
         `;
         
-        console.log("Trying to SHOW results container now"); // <-- ADDED THIS LINE
+        console.log("Trying to SHOW results container now"); 
         resultsContainer.classList.remove('hidden');
     }
     
@@ -468,16 +451,15 @@
     // Initialize with first calculation on load
     window.addEventListener('load', function() {
       setTimeout(() => {
-        // Ensure advanced options defaults are set if checkbox is not checked
         if (!showAdvancedCheckbox.checked) {
-            shippingCostInput.value = "0"; // Or your desired default when hidden
-            operatingCostInput.value = "0"; // Or your desired default when hidden
+            shippingCostInput.value = "0"; 
+            operatingCostInput.value = "0"; 
         }
-        console.log("Attempting INITIAL calculation on page load"); // <-- ADDED THIS LINE
-        calculatePricing(); // Call without event object
+        console.log("Attempting INITIAL calculation on page load"); 
+        calculatePricing(); 
         calculateButton.classList.add('animate-pulse');
         setTimeout(() => calculateButton.classList.remove('animate-pulse'), 2000);
-      }, 100); // Reduced timeout for quicker load
+      }, 100); 
     });
   </script>
 </body>
